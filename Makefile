@@ -1,5 +1,6 @@
 CC = g++
 DEBUG = -g
+STD = c++11
 OBJS = server.o
 OBJC = client.o
 SRCS = server.cpp
@@ -8,14 +9,14 @@ SRCC = client.cpp
 ALL: server client
 
 server: $(OBJS)
-	$(CC) $^ -o $@ $(DEBUG)
+	$(CC) -std=$(STD) $^ -o $@ $(DEBUG)
 $(OBJS): $(SRCS)
-	$(CC) -c $^ -o $@ $(DEBUG)
+	$(CC) -std=$(STD) -c $^ -o $@ $(DEBUG)
 
 client: $(OBJC)
-	$(CC) $^ -o $@ $(DEBUG)
+	$(CC) -std=$(STD) $^ -o $@ $(DEBUG)
 $(OBJC): $(SRCC)
-	$(CC) -c $^ -o $@ $(DEBUG)
+	$(CC) -std=$(STD) -c $^ -o $@ $(DEBUG)
 
 .PHONY:
 clean:

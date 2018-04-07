@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
     }
 
     // 连接服务端
-    if(connect(sockfd, (struct sockaddr *)server_addr, sizeof(server_addr)) < 0)
+    if(connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
         perror("connect");
         exit(-1);
@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
     // 子进程关闭写管道
     else
     {
-        close([pipefd[1]]);
+        close(pipefd[1]);
     }
 
     return 0;

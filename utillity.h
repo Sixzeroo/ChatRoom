@@ -12,10 +12,12 @@
 #include <string.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <arpa/inet.h>
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 
 using namespace std;
 
@@ -30,7 +32,7 @@ list<int> clients_list;
 
 #define BUFF_SIZE 0xFFFF
 
-#define WELCOM_MES "Welcome!"
+#define WELCOM_MES "Welcome to Chatroom! Your clientid is %d"
 
 #define CAUTION "There is only one client in this char room"
 
@@ -55,11 +57,11 @@ void addfd(int epollfd, int fd, bool enable_et)
     struct epoll_event ev;
     ev.data.fd = fd;
     // 允许读
-    ev.events = EPOLL_IN;
+    ev.events = EPOLLIN;
     // 设置为边缘出发模式
     if(enable_et)
     {
-        ev.events = EPOLL_IN | EPOLLET;
+        ev.events = EPOLLIN | EPOLLET;
     }
     // 添加进epoll中
     epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &ev);
@@ -98,7 +100,7 @@ int sendBroadcaseMess(int clientfd)
                 if(it == clientfd) continue;
 
                 sprintf(message, SERVER_MES, clientfd, buf);
-                if(send(it, message, BUFF_SIZE, 0))
+                if(send(it, message, BUFF_SIZE, 0) < 0)
                 {
                     perror("send mes");
                     exit(-1);

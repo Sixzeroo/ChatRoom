@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 
     // 创建epoll实例
     int epollfd = epoll_create(EPOLL_SIZE);
-    if(epollfp < 0)
+    if(epollfd < 0)
     {
         perror("epoll_create");
         exit(-1);
