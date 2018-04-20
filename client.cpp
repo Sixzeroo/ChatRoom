@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
             }
             else
             {
-                if(write(pipefd[1], message, strlen(message)-1) < 0)
+                if(write(pipefd[1], message, strlen(message)) < 0)
                 {
                     perror("fork error");
                     exit(-1);

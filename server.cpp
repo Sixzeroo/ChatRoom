@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
             exit(-1);
         }
 
-        printf("epoll events num is %d", epoll_events_count);
+        printf("Epoll events num is %d\n", epoll_events_count);
 
         for(int i=0; i < epoll_events_count; i++)
         {
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
                 }
             }
         }
-        if(close_flag)
+        if(close_flag && clients_list.size() == 0)
             break;
     }
 
