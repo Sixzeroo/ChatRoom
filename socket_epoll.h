@@ -15,12 +15,20 @@ enum SocketEpollStatus {
     S_STOP = 2
 };
 
+class EpollContext {
+public:
+    void *ptr;
+    int fd;
+    std::string client_ip;
+    int client_port;
+};
+
 class SocketEpollWatcher {
 public:
 
-    virtual int on_accept() = 0;
+    virtual int on_accept(EpollContext &epoll_context) = 0;
 
-    virtual int on_readable() = 0;
+    virtual int on_readable(EpollContext &epoll_context,const std::vector<int> client_list) = 0;
 };
 
 class SocketEpoll {
@@ -44,6 +52,7 @@ private:
     int _status;
     std::vector<int> _client_list;
     int _clients;
+    SocketEpollWatcher _watcher;
 
 public:
     SocketEpoll();
@@ -67,6 +76,8 @@ public:
     int start_epoll_loop();
 
     int stop_epoll();
+
+    int handle_readable_event(epoll_event &event, SocketEpollWatcher &socket_watcher);
 
 
 };

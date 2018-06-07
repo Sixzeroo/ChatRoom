@@ -134,11 +134,13 @@ int SocketEpoll::create_epoll() {
 int SocketEpoll::handle_event(epoll_event &e) {
     if(e.data.fd == _listen_socket)
     {
-        // TODO: 处理接受请求
+        // 处理接受请求
+        handle_accept_event(_epollfd, e, _watcher);
     }
     else if(e.events & EPOLLIN)
     {
-        // TODO: 处理来信请求
+        // 处理来信请求
+        handle_readable_event(e, _watcher);
     }
     else
     {
@@ -157,15 +159,43 @@ int SocketEpoll::handle_accept_event(const int &epollfd, epoll_event &event, Soc
     std::string client_ip = inet_ntoa(client_addr.sin_addr);
     int client_port = ntohs(client_addr.sin_port);
 
+    // epoll_event 中自带内容
+    EpollContext *epoll_context = new EpollContext();
+    epoll_context->fd = client_fd;
+    epoll_context->client_ip = client_ip;
+    epoll_context->client_port = client_port;
+
+    // TODO: 处理accept的额外事件
+    socket_watcher.on_accept(*epoll_context);
+
     // TODO: 处理epoll event中所包含的内容
     struct epoll_event ev;
     ev.data.fd = client_fd;
-    ev.events = EPOLLIN;  // 边沿出发模式
+    ev.data.ptr = epoll_context;
+    ev.events = EPOLLIN | EPOLLET;  // 边沿出发模式
     if(epoll_ctl(epollfd, EPOLL_CTL_ADD, client_fd, &ev) == -1)
     {
         // LOG ERROR
         return -1;
     }
+    set_nonblocking(client_fd);
+    // 加入客户端队列中
+    _client_list.push_back(client_fd);
+    return 0;
+}
+
+int SocketEpoll::handle_readable_event(epoll_event &event, SocketEpollWatcher &socket_watcher) {
+    EpollContext *epoll_context = (EpollContext *)event.data.ptr;
+    int fd = event.data.fd;
+
+    int ret = socket_watcher.on_readable(*epoll_context, _client_list);
+
+    if(ret == -1)
+    {
+        // LOG ERROR
+        return  -1;
+    }
+    return 0;
 }
 
 // 设置非阻塞

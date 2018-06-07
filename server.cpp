@@ -1,128 +1,64 @@
 //
-// Created by Sixzeroo on 2018/4/7.
+// Created by Sixzeroo on 2018/6/6.
 //
 
-#include "utillity.h"
+#include <string>
 
-int main(int argc, char *argv[])
-{
-    // 网络地址结构
-    struct sockaddr_in server_addr;
-    server_addr.sin_family = AF_INET;
-    // 本机字节序转换为网络字节序（大端模式）
-    server_addr.sin_port = htons(SERVER_PORT);
-    // 处理服务器IP，将字符串格式的IP转换为网络字节序的二进制地址
-    inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr.s_addr);
+#include "server.h"
+#include "parse.h"
 
-    // 创建监听套接字
-    int listener = socket(AF_INET, SOCK_STREAM, 0);
-    if(listener < 0)
+// 处理接受请求逻辑
+int ServerEpollWatcher::on_accept(EpollContext &epoll_context) {
+    int client_fd = epoll_context.fd;
+
+    printf("client %s:%d connected to server\n", epoll_context.client_ip, epoll_context.client_port);
+    Msg m;
+    m.code = M_NORMAL;
+    m.context = WELCOM_MES;
+    int ret = m.send_diy(client_fd);
+    // LOG
+    return ret;
+}
+
+// 处理来信请求
+int ServerEpollWatcher::on_readable(EpollContext &epoll_context, const std::vector<int> client_list) {
+    int client_fd = epoll_context.fd;
+    // 只有一个客户端，发送警告信息
+    if(client_list.size() == 1)
     {
-        perror("listener");
-        exit(-1);
+        Msg m(M_NORMAL, ONLY_ONE_CAUTION);
+        m.send_diy(client_fd);
     }
-    printf("listener listend\n\n");
-
-    // 套接字地址绑定，地址格式强制转化为通用地址格式sockaddr
-    if(bind(listener, (struct sockaddr *)&server_addr, sizeof(server_addr)))
+    else
     {
-        perror("bind");
-        exit(-1);
-    }
-
-    // 设定监听，20表示希望入队的未完成请求的数量
-    if(listen(listener, 20) < 0)
-    {
-        perror("listen");
-        exit(-1);
-    }
-    printf("Starting to listen: %s\n\n", SERVER_IP);
-
-    // 创建epoll实例
-    int epollfd = epoll_create(EPOLL_SIZE);
-    if(epollfd < 0)
-    {
-        perror("epoll_create");
-        exit(-1);
-    }
-    printf("epoll created, epollfd=%d\n\n", epollfd);
-    static struct epoll_event events[EPOLL_SIZE];
-
-    // 在epoll中注册指定的文件描述符
-    addfd(epollfd, listener, true);
-
-    // 关闭标记
-    bool close_flag = false;
-
-    while(1)
-    {
-        // 监控发生的事件，可能会永久阻塞
-        int epoll_events_count = epoll_wait(epollfd, events, EPOLL_SIZE, -1);
-
-        if(epoll_events_count < 0)
+        Msg recv_m;
+        recv_m.recv_diy(client_fd);
+        if(recv_m.code != M_NORMAL)
         {
-            perror("epoll");
-            exit(-1);
+            // LOG ERROR
+            return -1;
         }
-
-        printf("Epoll events num is %d\n", epoll_events_count);
-
-        for(int i=0; i < epoll_events_count; i++)
+        Msg send_m(M_NORMAL, recv_m.context);
+        for(auto it : client_list)
         {
-            int sockfd = events[i].data.fd;
+            if(it == client_fd) continue;
 
-            // 服务器处理逻辑
-            if(sockfd == listener)
-            {
-                // 接受客户端发来的请求
-                struct sockaddr_in client_add;
-                socklen_t client_add_len = sizeof(struct sockaddr_in);
-                int clientfd = accept(listener, (struct sockaddr *)&client_add, &client_add_len);
-                // 打印信息，将网络字节序二进制地址转化为字符串格式
-                printf("Client connection from %s:%d (IP:Port), clientfd = %d\n",
-                    inet_ntoa(client_add.sin_addr),
-                    ntohs(client_add.sin_port),
-                    clientfd);
-
-                addfd(epollfd, clientfd, true);
-
-                // 加入队列中
-                clients_list.push_back(clientfd);
-                printf("Add new Client (clientfd = %d) to epoll\n", clientfd);
-                printf("Now there are %d clients in ChatRoom \n", (int)clients_list.size());
-
-                printf("Welcome message\n");
-                // 写入欢迎信息
-                char message[BUFF_SIZE];
-                bzero(message, BUFF_SIZE);
-                sprintf(message, WELCOM_MES, clientfd);
-                if(send(clientfd, message, BUFF_SIZE, 0) < 0)
-                {
-                    perror("send");
-                    exit(-1);
-                }
-            }
-            else
-            {
-                int ret = sendBroadcaseMess(sockfd);
-                if(ret < 0)
-                {
-                    perror("send mes");
-                    exit(-1);
-                }
-                else if (ret == 0)
-                {
-                    close_flag = true;
-                    break;
-                }
-            }
+            send_m.send_diy(it);
         }
-        if(close_flag && clients_list.size() == 0)
-            break;
     }
-
-    close(listener);
-    close(epollfd);
-
     return 0;
+}
+
+int ChatRoomServer::start_server(const std::string bind_ip = "", int port, int backlog, int max_events) {
+    // LOG INFO
+    _socket_epoll.set_bind_ip(bind_ip);
+    _socket_epoll.set_port(port);
+    _socket_epoll.set_backlog(backlog);
+    _socket_epoll.set_max_events(max_events);
+    return _socket_epoll.start_epoll();
+}
+
+int ChatRoomServer::stop_server() {
+    // LOG INFO
+    return _socket_epoll.stop_epoll();
 }
