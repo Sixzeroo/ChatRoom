@@ -11,7 +11,7 @@
 int ServerEpollWatcher::on_accept(EpollContext &epoll_context) {
     int client_fd = epoll_context.fd;
 
-    printf("client %s:%d connected to server\n", epoll_context.client_ip, epoll_context.client_port);
+    printf("client %s:%d connected to server\n", epoll_context.client_ip.c_str(), epoll_context.client_port);
     Msg m;
     m.code = M_NORMAL;
     m.context = WELCOM_MES;
@@ -39,7 +39,7 @@ int ServerEpollWatcher::on_readable(EpollContext &epoll_context, const std::vect
             return -1;
         }
         Msg send_m(M_NORMAL, recv_m.context);
-        for(auto it : client_list)
+        for(int it : client_list)
         {
             if(it == client_fd) continue;
 
@@ -49,7 +49,7 @@ int ServerEpollWatcher::on_readable(EpollContext &epoll_context, const std::vect
     return 0;
 }
 
-int ChatRoomServer::start_server(const std::string bind_ip = "", int port, int backlog, int max_events) {
+int ChatRoomServer::start_server(const std::string bind_ip, int port, int backlog, int max_events) {
     // LOG INFO
     _socket_epoll.set_bind_ip(bind_ip);
     _socket_epoll.set_port(port);
@@ -61,4 +61,11 @@ int ChatRoomServer::start_server(const std::string bind_ip = "", int port, int b
 int ChatRoomServer::stop_server() {
     // LOG INFO
     return _socket_epoll.stop_epoll();
+}
+
+int main()
+{
+    ChatRoomServer server;
+    server.start_server("127.0.0.1", 8888, 20, 200);
+    return 0;
 }

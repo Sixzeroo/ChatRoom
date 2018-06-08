@@ -9,7 +9,7 @@
 
 #include "parse.h"
 
-#define EXIT_MSG
+#define EXIT_MSG "exit"
 
 class ChatRoomClient {
 private:

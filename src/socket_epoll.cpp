@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <string>
 #include <errno.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -149,7 +150,7 @@ int SocketEpoll::handle_event(epoll_event &e) {
     return 0;
 }
 
-int SocketEpoll::handle_accept_event(const int &epollfd, epoll_event &event, SocketEpollWatcher &socket_watcher) {
+int SocketEpoll::handle_accept_event(const int &epollfd, epoll_event &event, SocketEpollWatcher *socket_watcher) {
     int sockfd = event.data.fd;
 
     struct sockaddr_in client_addr;
@@ -166,7 +167,7 @@ int SocketEpoll::handle_accept_event(const int &epollfd, epoll_event &event, Soc
     epoll_context->client_port = client_port;
 
     // TODO: 处理accept的额外事件
-    socket_watcher.on_accept(*epoll_context);
+    socket_watcher->on_accept(*epoll_context);
 
     // TODO: 处理epoll event中所包含的内容
     struct epoll_event ev;
@@ -184,11 +185,11 @@ int SocketEpoll::handle_accept_event(const int &epollfd, epoll_event &event, Soc
     return 0;
 }
 
-int SocketEpoll::handle_readable_event(epoll_event &event, SocketEpollWatcher &socket_watcher) {
+int SocketEpoll::handle_readable_event(epoll_event &event, SocketEpollWatcher *socket_watcher) {
     EpollContext *epoll_context = (EpollContext *)event.data.ptr;
     int fd = event.data.fd;
 
-    int ret = socket_watcher.on_readable(*epoll_context, _client_list);
+    int ret = socket_watcher->on_readable(*epoll_context, _client_list);
 
     if(ret == -1)
     {
@@ -216,7 +217,7 @@ int SocketEpoll::add_listen_sock_to_epoll() {
     struct epoll_event ev;
     ev.data.fd = _listen_socket;
     ev.events = EPOLLIN;  // 边沿出发模式
-    if(epoll_ctl(epollfd, EPOLL_CTL_ADD, _listen_socket, &ev) == -1)
+    if(epoll_ctl(_epollfd, EPOLL_CTL_ADD, _listen_socket, &ev) == -1)
     {
         // LOG ERROR
         return -1;

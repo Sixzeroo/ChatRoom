@@ -5,6 +5,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <fcntl.h>
+#include <string.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -61,7 +62,7 @@ int ChatRoomClient::set_noblocking(int fd) {
     int flag = fcntl(fd, F_GETFL, 0);
     if(flag < 0)
         flag = 0;
-    int ret = fcntl(fd, F_SETFL, flag | O_NONBLOCK)
+    int ret = fcntl(fd, F_SETFL, flag | O_NONBLOCK);
     if(ret < 0)
     {
         // LOG ERROR
@@ -185,4 +186,11 @@ int ChatRoomClient::start_client() {
         set_server_ip("127.0.0.1");
 
     return work_loop();
+}
+
+int main()
+{
+    ChatRoomClient client;
+    client.start_client();
+    return 0;
 }

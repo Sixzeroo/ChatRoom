@@ -41,7 +41,7 @@ private:
 
     int handle_event(epoll_event &e);
 
-    int handle_accept_event(const int &epollfd, epoll_event &event, SocketEpollWatcher &socket_watcher);
+    int handle_accept_event(const int &epollfd, epoll_event &event, SocketEpollWatcher *socket_watcher);
 
     int _epollfd;
     int _max_events;
@@ -52,7 +52,7 @@ private:
     int _status;
     std::vector<int> _client_list;
     int _clients;
-    SocketEpollWatcher _watcher;
+    SocketEpollWatcher *_watcher;
 
 public:
     SocketEpoll();
@@ -77,7 +77,7 @@ public:
 
     int stop_epoll();
 
-    int handle_readable_event(epoll_event &event, SocketEpollWatcher &socket_watcher);
+    int handle_readable_event(epoll_event &event, SocketEpollWatcher *socket_watcher);
 
 
 };
