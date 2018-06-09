@@ -69,6 +69,8 @@ public:
 
     int set_nonblocking(int fd);
 
+    void set_watcher(SocketEpollWatcher *_watcher);
+
     int add_listen_sock_to_epoll();
 
     int start_epoll();

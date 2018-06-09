@@ -23,6 +23,8 @@ private:
     SocketEpoll _socket_epoll;
 
 public:
+    ChatRoomServer();
+
     int start_server(const std::string bind_ip, int port, int backlog, int max_events);
 
     int stop_server();

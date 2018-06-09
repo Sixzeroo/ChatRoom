@@ -12,26 +12,30 @@
 #include <sys/epoll.h>
 
 #include "client.h"
+#include "log.h"
 
 ChatRoomClient::ChatRoomClient()
 {
     _server_ip = "";
     _server_port = -1;
     _client_fd = -1;
+    _epollfd = -1;
 }
 
 void ChatRoomClient::set_server_ip(const std::string &_server_ip) {
+    LOG(DEBUG)<<"Set sever ip: "<<_server_ip<<std::endl;
     ChatRoomClient::_server_ip = _server_ip;
 }
 
 void ChatRoomClient::set_server_port(int _server_port) {
+    LOG(DEBUG)<<"Set sever port: "<<_server_port<<std::endl;
     ChatRoomClient::_server_port = _server_port;
 }
 
 int ChatRoomClient::connect_to_server(std::string server_ip, int port) {
     if(_client_fd != -1)
     {
-        // LOG ERROR
+        LOG(ERROR)<<"Connect to server: epoll had created"<<std::endl;
         return -1;
     }
 
@@ -44,13 +48,13 @@ int ChatRoomClient::connect_to_server(std::string server_ip, int port) {
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if(sockfd < 0)
     {
-        // LOG ERROR
+        LOG(ERROR)<<"Connect to server: create socket error"<<std::endl;
         return -1;
     }
 
     if(connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)
     {
-        // LOG ERROR
+        LOG(ERROR)<<"Connect to server: connnect to server error"<<std::endl;
         return -1;
     }
 
@@ -90,18 +94,19 @@ int ChatRoomClient::addfd(int epollfd, int fd, bool enable_et) {
 int ChatRoomClient::work_loop() {
     if(_epollfd != -1)
     {
-        // LOG ERROR
+        LOG(ERROR)<<"Start client error: epoll created"<<std::endl;
         return -1;
     }
 
     int pipefd[2];
     if(pipe(pipefd) < 0)
     {
-        // LOG ERROR
+        LOG(ERROR)<<"Start client error: create pipe error"<<std::endl;
         return -1;
     }
 
     _epollfd = epoll_create(1024);
+    LOG(DEBUG)<<"Start client: create epoll : "<<_epollfd<<std::endl;
     if(_epollfd < 0)
     {
         // LOG ERROR
@@ -117,12 +122,14 @@ int ChatRoomClient::work_loop() {
     int pid = fork();
     if(pid < 0)
     {
-        // LOG ERROR
+        LOG(ERROR)<<"Start client: fork error"<<std::endl;
         return -1;
     }
     else if(pid == 0)
     {
+        LOG(DEBUG)<<"Client: create child successful"<<std::endl;
         close(pipefd[0]);
+        LOG(DEBUG)<<"Client: child process close pipefd[0] successful"<<std::endl;
         char message[BUFF_SIZE];
 
         bzero(message, BUFF_SIZE);
@@ -145,35 +152,55 @@ int ChatRoomClient::work_loop() {
     {
         close(pipefd[1]);
 
+        LOG(DEBUG)<<"Client: parent process close pipefd[1] successful"<<std::endl;
+
         while (isworking)
         {
             int epoll_event_count = epoll_wait(_epollfd, events, 2, -1);
 
             for(int i = 0; i < epoll_event_count; i++)
             {
+
                 if(events[i].data.fd = _client_fd)
                 {
+                    LOG(DEBUG)<<"Client epoll: get events from sockfd"<<std::endl;
                     Msg recv_m;
                     recv_m.recv_diy(_client_fd);
                     // 处理关闭连接情况
                     if(recv_m.code != M_NORMAL)
                     {
-                        // LOG ERROR
+                        LOG(INFO)<<"Client epoll: close connetct"<<std::endl;
                         return -1;
                     }
                     std::cout<<recv_m.context;
                 }
                 else
                 {
+                    LOG(DEBUG)<<"Client epoll: get events from terminal"<<std::endl;
+
                     char message[BUFF_SIZE];
                     ssize_t ret = read(events[i].data.fd, message, BUFF_SIZE);
 
                     Msg send_m(M_NORMAL, message);
                     send_m.send_diy(_client_fd);
+
+                    LOG(DEBUG)<<"Client epoll: send msg to server"<<std::endl;
                 }
             }
         }
     }
+
+    if(pid)
+    {
+        close(pipefd[0]);
+        close(_epollfd);
+    }
+    else
+    {
+        close(pipefd[1]);
+    }
+
+    return 0;
 }
 
 int ChatRoomClient::start_client() {
@@ -185,11 +212,19 @@ int ChatRoomClient::start_client() {
     if(_server_ip.empty())
         set_server_ip("127.0.0.1");
 
+    if(connect_to_server(_server_ip, _server_port) < 0)
+    {
+        LOG(ERROR)<<"Client start: connect to server error"<<std::endl;
+        return -1;
+    }
+
     return work_loop();
 }
 
 int main()
 {
+    init_logger("client_log", "debug.log", "info.log", "warn.log", "error.log", "all.log");
+    set_logger_mode(1);
     ChatRoomClient client;
     client.start_client();
     return 0;

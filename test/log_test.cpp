@@ -5,7 +5,8 @@
 
 int main()
 {
-	init_logger("debug.log", "info.log", "warn.log", "error.log", "all.log");
+	init_logger("test", "debug.log", "info.log", "warn.log", "error.log", "all.log");
+	set_logger_mode(0);
 	LOG(DEBUG)<<"This is debug test information"<<std::endl;
 	LOG(INFO)<<"This is info test information"<<std::endl;
 	LOG(WARN)<<"This is warn test information"<<std::endl;

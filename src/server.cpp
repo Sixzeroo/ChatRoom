@@ -6,9 +6,15 @@
 
 #include "server.h"
 #include "parse.h"
+#include "log.h"
+
+ChatRoomServer::ChatRoomServer() {
+    _socket_epoll.set_watcher(&_server_handler);
+}
 
 // 处理接受请求逻辑
 int ServerEpollWatcher::on_accept(EpollContext &epoll_context) {
+    LOG(DEBUG)<<"Handle: on_accept start"<<std::endl;
     int client_fd = epoll_context.fd;
 
     printf("client %s:%d connected to server\n", epoll_context.client_ip.c_str(), epoll_context.client_port);
@@ -16,7 +22,7 @@ int ServerEpollWatcher::on_accept(EpollContext &epoll_context) {
     m.code = M_NORMAL;
     m.context = WELCOM_MES;
     int ret = m.send_diy(client_fd);
-    // LOG
+
     return ret;
 }
 
@@ -50,7 +56,7 @@ int ServerEpollWatcher::on_readable(EpollContext &epoll_context, const std::vect
 }
 
 int ChatRoomServer::start_server(const std::string bind_ip, int port, int backlog, int max_events) {
-    // LOG INFO
+    LOG(INFO)<<"Server start: start"<<std::endl;
     _socket_epoll.set_bind_ip(bind_ip);
     _socket_epoll.set_port(port);
     _socket_epoll.set_backlog(backlog);
@@ -59,12 +65,14 @@ int ChatRoomServer::start_server(const std::string bind_ip, int port, int backlo
 }
 
 int ChatRoomServer::stop_server() {
-    // LOG INFO
+    LOG(INFO)<<"Server: stop server"<<std::endl;
     return _socket_epoll.stop_epoll();
 }
 
 int main()
 {
+    init_logger("server_log", "debug.log", "info.log", "warn.log", "error.log", "all.log");
+    set_logger_mode(1);
     ChatRoomServer server;
     server.start_server("127.0.0.1", 8888, 20, 200);
     return 0;

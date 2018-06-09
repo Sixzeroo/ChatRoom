@@ -14,6 +14,7 @@
 #include <sys/epoll.h>
 
 #include "socket_epoll.h"
+#include "log.h"
 
 SocketEpoll::SocketEpoll(){
     _epollfd = -1;
@@ -145,7 +146,7 @@ int SocketEpoll::handle_event(epoll_event &e) {
     }
     else
     {
-        // LOG INFO
+        LOG(WARN)<<"Handle event: it is neither accept or readable event"<<std::endl;
     }
     return 0;
 }
@@ -153,12 +154,22 @@ int SocketEpoll::handle_event(epoll_event &e) {
 int SocketEpoll::handle_accept_event(const int &epollfd, epoll_event &event, SocketEpollWatcher *socket_watcher) {
     int sockfd = event.data.fd;
 
+    LOG(DEBUG)<<"Handle: start handle accept event"<<std::endl;
+
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(struct sockaddr_in);
     int client_fd = accept(sockfd, (struct sockaddr *)&client_addr, &client_addr_len);
+    if(client_fd < 0)
+    {
+        LOG(ERROR)<<"Handle: accept error"<<std::endl;
+        return -1;
+    }
 
     std::string client_ip = inet_ntoa(client_addr.sin_addr);
     int client_port = ntohs(client_addr.sin_port);
+
+
+    LOG(DEBUG)<<"Handle: accept successful from "<<client_ip<<":"<<client_port<<std::endl;
 
     // epoll_event 中自带内容
     EpollContext *epoll_context = new EpollContext();
@@ -166,22 +177,24 @@ int SocketEpoll::handle_accept_event(const int &epollfd, epoll_event &event, Soc
     epoll_context->client_ip = client_ip;
     epoll_context->client_port = client_port;
 
-    // TODO: 处理accept的额外事件
+    // 处理accept的额外事件
     socket_watcher->on_accept(*epoll_context);
 
-    // TODO: 处理epoll event中所包含的内容
+    // 处理epoll event中所包含的内容
     struct epoll_event ev;
     ev.data.fd = client_fd;
     ev.data.ptr = epoll_context;
     ev.events = EPOLLIN | EPOLLET;  // 边沿出发模式
     if(epoll_ctl(epollfd, EPOLL_CTL_ADD, client_fd, &ev) == -1)
     {
-        // LOG ERROR
+        LOG(ERROR)<<"Handle: epoll ctl error"<<std::endl;
         return -1;
     }
     set_nonblocking(client_fd);
+
     // 加入客户端队列中
     _client_list.push_back(client_fd);
+    LOG(DEBUG)<<"Handle: add accept client to list successful"<<std::endl;
     return 0;
 }
 
@@ -228,19 +241,19 @@ int SocketEpoll::add_listen_sock_to_epoll() {
 int SocketEpoll::start_epoll() {
     if(listen_on() == -1)
     {
-        // LOG ERROR
+        LOG(ERROR)<<"SocketEpoll: listen error"<<std::endl;
         return -1;
     }
 
     if(create_epoll() == -1)
     {
-        // LOG ERROR
+        LOG(ERROR)<<"SocketEpoll: create_epoll error"<<std::endl;
         return -1;
     }
 
     if(add_listen_sock_to_epoll() == -1)
     {
-        // LOG ERROR
+        LOG(ERROR)<<"SocketEpoll: error"<<std::endl;
         return -1;
     }
 
@@ -249,6 +262,7 @@ int SocketEpoll::start_epoll() {
 
 int SocketEpoll::start_epoll_loop() {
     epoll_event *events = new epoll_event[_max_events];
+    LOG(DEBUG)<<"SocketEpoll: start epoll loop"<<std::endl;
     while (_status != S_STOP)
     {
         int epoll_events_count = epoll_wait(_epollfd, events, _max_events, -1);
@@ -256,18 +270,19 @@ int SocketEpoll::start_epoll_loop() {
         {
             if(errno == EINTR)
             {
-                // LOG
+                LOG(WARN)<<"SocketEpoll: INT"<<std::endl;
                 continue;
             }
-            // LOG ERROR
+            LOG(ERROR)<<"SocketEpoll: epoll wait error"<<std::endl;
             break;
         }
 
+        LOG(DEBUG)<<"SocketEpoll: handle event"<<std::endl;
         for(int i = 0; i < epoll_events_count; i++)
             handle_event(events[i]);
     }
 
-    // LOG
+    LOG(DEBUG)<<"ScoketEoll: end epoll loop"<<std::endl;
     if(events != NULL)
     {
         delete[] events;
@@ -279,4 +294,8 @@ int SocketEpoll::start_epoll_loop() {
 // 设置状态为拒绝连接状态
 int SocketEpoll::stop_epoll() {
     _status = S_REJECT_CONN;
+}
+
+void SocketEpoll::set_watcher(SocketEpollWatcher *_watcher) {
+    SocketEpoll::_watcher = _watcher;
 }

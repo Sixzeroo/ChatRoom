@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 
 #include "parse.h"
+#include "log.h"
 
 Msg::Msg(int code, std::string context) {
     this->code = code;
@@ -22,7 +23,7 @@ int Msg::send_diy(int fd) {
     memcpy(message, &data, sizeof(data));
     if(send(fd, message, BUFF_SIZE, 0) < 0)
     {
-        // LOG ERROR
+        LOG(ERROR)<<"send error"<<std::endl;
         return -1;
     }
     return 0;

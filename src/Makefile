@@ -1,8 +1,9 @@
 CC = g++
 DEBUG = -g -Wall
 STD = c++11
-OBJS = server.o parse.o socket_epoll.o
-OBJC = client.o parse.o
+OBJS = server.o parse.o socket_epoll.o log.o
+OBJC = client.o parse.o log.o
+DEP_INCLUDE_PATH= -I ./
 
 ALL: server client
 
@@ -12,17 +13,20 @@ server: $(OBJS)
 client: $(OBJC)
 	$(CC) -std=$(STD) $^ -o $@ $(DEBUG)
 
-server.o: server.cpp server.h parse.h
-	$(CC) -std=$(STD) -c $^ $(DEBUG)
+server.o: server.cpp
+	$(CC) -std=$(STD) $(DEP_INCLUDE_PATH) -c $^ $(DEBUG)
 
-client.o: client.cpp client.h
-	$(CC) -std=$(STD) -c $^ $(DEBUG)
+client.o: client.cpp
+	$(CC) -std=$(STD) $(DEP_INCLUDE_PATH) -c $^ $(DEBUG)
 
-parse.o: parse.cpp parse.h
-	$(CC) -std=$(STD) -c $^ $(DEBUG)
+log.o: log.cpp
+	$(CC) -std=$(STD) $(DEP_INCLUDE_PATH) -c $^ $(DEBUG)
 
-socket_epoll.o: socket_epoll.cpp socket_epoll.h
-	$(CC) -std=$(STD) -c $^ $(DEBUG)
+parse.o: parse.cpp
+	$(CC) -std=$(STD) $(DEP_INCLUDE_PATH) -c $^ $(DEBUG)
+
+socket_epoll.o: socket_epoll.cpp
+	$(CC) -std=$(STD) $(DEP_INCLUDE_PATH) -c $^ $(DEBUG)
 
 
 .PHONY:
