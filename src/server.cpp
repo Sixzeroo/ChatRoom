@@ -29,6 +29,8 @@ int ServerEpollWatcher::on_accept(EpollContext &epoll_context) {
 // 处理来信请求
 int ServerEpollWatcher::on_readable(EpollContext &epoll_context, const std::vector<int> client_list) {
     int client_fd = epoll_context.fd;
+    Msg recv_m;
+    recv_m.recv_diy(client_fd);
     // 只有一个客户端，发送警告信息
     if(client_list.size() == 1)
     {
@@ -37,18 +39,15 @@ int ServerEpollWatcher::on_readable(EpollContext &epoll_context, const std::vect
     }
     else
     {
-        Msg recv_m;
-        recv_m.recv_diy(client_fd);
         if(recv_m.code != M_NORMAL)
         {
-            // LOG ERROR
+            LOG(ERROR)<<"Broadcast error"<<std::endl;
             return -1;
         }
         Msg send_m(M_NORMAL, recv_m.context);
         for(int it : client_list)
         {
             if(it == client_fd) continue;
-
             send_m.send_diy(it);
         }
     }
@@ -57,6 +56,7 @@ int ServerEpollWatcher::on_readable(EpollContext &epoll_context, const std::vect
 
 int ChatRoomServer::start_server(const std::string bind_ip, int port, int backlog, int max_events) {
     LOG(INFO)<<"Server start: start"<<std::endl;
+    std::cout<<"ChatRoom start!"<<std::endl;
     _socket_epoll.set_bind_ip(bind_ip);
     _socket_epoll.set_port(port);
     _socket_epoll.set_backlog(backlog);

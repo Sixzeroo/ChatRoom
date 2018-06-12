@@ -132,20 +132,24 @@ int ChatRoomClient::work_loop() {
         LOG(DEBUG)<<"Client: child process close pipefd[0] successful"<<std::endl;
         char message[BUFF_SIZE];
 
-        bzero(message, BUFF_SIZE);
-        fgets(message, BUFF_SIZE, stdin);
+        printf("Please input '%s' to exit chat room\n", EXIT_MSG);
 
-        if(strncasecmp(message, EXIT_MSG, strlen(EXIT_MSG)) == 0)
+        while (isworking)
         {
-            isworking = false;
-        }
-        else
-        {
+            bzero(message, BUFF_SIZE);
+            fgets(message, BUFF_SIZE, stdin);
+
+            if(strncasecmp(message, EXIT_MSG, strlen(EXIT_MSG)) == 0)
+            {
+                LOG(INFO)<<"Client exit"<<std::endl;
+                isworking = false;
+            }
             if(write(pipefd[1], message, strlen(message)) < 0)
             {
                 perror("fork error");
                 exit(-1);
             }
+
         }
     }
     else
@@ -170,7 +174,7 @@ int ChatRoomClient::work_loop() {
                     if(recv_m.code != M_NORMAL)
                     {
                         LOG(INFO)<<"Client epoll: close connetct"<<std::endl;
-                        return -1;
+                        isworking = false;
                     }
                     std::cout<<recv_m.context<<std::endl<<std::flush;
                 }
@@ -179,7 +183,13 @@ int ChatRoomClient::work_loop() {
                     LOG(DEBUG)<<"Client epoll: get events from terminal"<<std::endl;
 
                     char message[BUFF_SIZE];
+                    bzero(message, sizeof(message));
                     ssize_t ret = read(events[i].data.fd, message, BUFF_SIZE);
+
+                    if(strncasecmp(message, EXIT_MSG, strlen(EXIT_MSG)) == 0)
+                        isworking = false;
+
+                    // TODO: 处理客户退出聊天室的情况
 
                     Msg send_m(M_NORMAL, message);
                     send_m.send_diy(_client_fd);

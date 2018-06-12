@@ -11,7 +11,8 @@
 #define BUFF_SIZE 4096
 
 enum MsgType {
-    M_NORMAL = 1
+    M_NORMAL = 1,
+    M_EXIT
 };
 
 // 消息格式

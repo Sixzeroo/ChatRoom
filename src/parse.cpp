@@ -37,7 +37,7 @@ int Msg::recv_diy(int fd) {
 
     if(len == 0)
     {
-        // LOG ERROR
+        LOG(ERROR)<<"receve len = 0 msg"<<std::endl;
         return -1;
     }
 
