@@ -161,7 +161,7 @@ int ChatRoomClient::work_loop() {
             for(int i = 0; i < epoll_event_count; i++)
             {
 
-                if(events[i].data.fd = _client_fd)
+                if(events[i].data.fd == _client_fd)
                 {
                     LOG(DEBUG)<<"Client epoll: get events from sockfd"<<std::endl;
                     Msg recv_m;
@@ -172,7 +172,7 @@ int ChatRoomClient::work_loop() {
                         LOG(INFO)<<"Client epoll: close connetct"<<std::endl;
                         return -1;
                     }
-                    std::cout<<recv_m.context;
+                    std::cout<<recv_m.context<<std::endl<<std::flush;
                 }
                 else
                 {

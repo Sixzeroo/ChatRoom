@@ -184,7 +184,7 @@ int SocketEpoll::handle_accept_event(const int &epollfd, epoll_event &event, Soc
     struct epoll_event ev;
     ev.data.fd = client_fd;
     ev.data.ptr = epoll_context;
-    ev.events = EPOLLIN | EPOLLET;  // 边沿出发模式
+    ev.events = EPOLLIN | EPOLLONESHOT;  // EPOLLONESHOT模式
     if(epoll_ctl(epollfd, EPOLL_CTL_ADD, client_fd, &ev) == -1)
     {
         LOG(ERROR)<<"Handle: epoll ctl error"<<std::endl;
@@ -203,6 +203,13 @@ int SocketEpoll::handle_readable_event(epoll_event &event, SocketEpollWatcher *s
     int fd = event.data.fd;
 
     int ret = socket_watcher->on_readable(*epoll_context, _client_list);
+
+    event.events = EPOLLIN | EPOLLONESHOT;
+    if(epoll_ctl(_epollfd, EPOLL_CTL_MOD, fd, &event) == -1)
+    {
+        LOG(ERROR)<<"Handle: epoll ctl error"<<std::endl;
+        return -1;
+    }
 
     if(ret == -1)
     {

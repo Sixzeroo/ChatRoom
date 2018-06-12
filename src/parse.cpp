@@ -3,6 +3,7 @@
 //
 
 #include <string.h>
+#include <iostream>
 #include <sys/types.h>
 #include <sys/socket.h>
 
@@ -44,4 +45,5 @@ int Msg::recv_diy(int fd) {
     memcpy(&data, buf, sizeof(data));
     code = data.code;
     context = data.context;
+    LOG(DEBUG)<<"Parse: Receive msg : msg code = "<<code<<std::endl;
 }
