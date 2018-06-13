@@ -206,17 +206,36 @@ int SocketEpoll::handle_readable_event(epoll_event &event, SocketEpollWatcher *s
 
     int ret = socket_watcher->on_readable(*epoll_context, _client_list);
 
+    if(ret == -1)
+    {
+        LOG(ERROR)<<"SocketEpoll : handle readable event error"<<std::endl;
+        return -1;
+    }
+    // 客户端退出的情况
+    if(ret == -2)
+    {
+        if(epoll_ctl(_epollfd, EPOLL_CTL_DEL, fd, &event) == -1)
+        {
+            LOG(ERROR)<<"Handle: epoll del error"<<std::endl;
+            return -1;
+        }
+        // 从列表中删除对应的fd
+        for(auto it = _client_list.begin(); it != _client_list.end(); it++)
+            if(*it == fd)
+            {
+                _client_list.erase(it);
+                break;
+            }
+        LOG(INFO)<<"Client fd "<<fd<<" exit ChatRoom"<<std::endl;
+        printf("Client fd %d exit ChatRoom\n", fd);
+        return 0;
+    }
+
     event.events = EPOLLIN | EPOLLET | EPOLLONESHOT;
     if(epoll_ctl(_epollfd, EPOLL_CTL_MOD, fd, &event) == -1)
     {
         LOG(ERROR)<<"Handle: epoll ctl error"<<std::endl;
         return -1;
-    }
-
-    if(ret == -1)
-    {
-        // LOG ERROR
-        return  -1;
     }
     return 0;
 }

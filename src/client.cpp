@@ -146,8 +146,8 @@ int ChatRoomClient::work_loop() {
             }
             if(write(pipefd[1], message, strlen(message)) < 0)
             {
-                perror("fork error");
-                exit(-1);
+                LOG(ERROR)<<"Client child process: write error"<<std::endl;
+                return -1;
             }
 
         }
@@ -186,10 +186,15 @@ int ChatRoomClient::work_loop() {
                     bzero(message, sizeof(message));
                     ssize_t ret = read(events[i].data.fd, message, BUFF_SIZE);
 
+                    // 处理客户端退出聊天室的情况
                     if(strncasecmp(message, EXIT_MSG, strlen(EXIT_MSG)) == 0)
+                    {
                         isworking = false;
-
-                    // TODO: 处理客户退出聊天室的情况
+                        Msg send_m(M_EXIT, "exit");
+                        send_m.send_diy(_client_fd);
+                        LOG(DEBUG)<<"Client epoll: send exit msg to server"<<std::endl;
+                        continue;
+                    }
 
                     Msg send_m(M_NORMAL, message);
                     send_m.send_diy(_client_fd);

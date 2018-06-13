@@ -26,11 +26,16 @@ int ServerEpollWatcher::on_accept(EpollContext &epoll_context) {
     return ret;
 }
 
-// 处理来信请求
+// 处理来信请求, 出错返回-1， 退出连接返回-2
 int ServerEpollWatcher::on_readable(EpollContext &epoll_context, const std::vector<int> client_list) {
     int client_fd = epoll_context.fd;
     Msg recv_m;
     recv_m.recv_diy(client_fd);
+    // 处理客户端退出的情况
+    if(recv_m.code == M_EXIT)
+    {
+        return -2;
+    }
     // 只有一个客户端，发送警告信息
     if(client_list.size() == 1)
     {
@@ -39,12 +44,12 @@ int ServerEpollWatcher::on_readable(EpollContext &epoll_context, const std::vect
     }
     else
     {
-        if(recv_m.code != M_NORMAL)
-        {
-            LOG(ERROR)<<"Broadcast error"<<std::endl;
-            return -1;
-        }
-        Msg send_m(M_NORMAL, recv_m.context);
+        // 处理消息格式
+        std::string meg_str = recv_m.context;
+        meg_str = std::to_string(client_fd) + ">" + meg_str;
+        std::cout<<meg_str<<std::endl;
+        Msg send_m(M_NORMAL, meg_str);
+        // 进行广播
         for(int it : client_list)
         {
             if(it == client_fd) continue;
