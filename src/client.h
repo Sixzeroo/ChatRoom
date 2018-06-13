@@ -36,7 +36,9 @@ public:
 
     int work_loop();
 
-    int start_client();
+    int start_client(std::string ip, int port);
+
+    std::string get_time_str();
 };
 
 #endif //CHARROOM_CLIENT_H

@@ -6,6 +6,7 @@
 
 #include "server.h"
 #include "parse.h"
+#include "config.h"
 #include "log.h"
 
 ChatRoomServer::ChatRoomServer() {
@@ -47,7 +48,6 @@ int ServerEpollWatcher::on_readable(EpollContext &epoll_context, const std::vect
         // 处理消息格式
         std::string meg_str = recv_m.context;
         meg_str = std::to_string(client_fd) + ">" + meg_str;
-        std::cout<<meg_str<<std::endl;
         Msg send_m(M_NORMAL, meg_str);
         // 进行广播
         for(int it : client_list)
@@ -76,9 +76,12 @@ int ChatRoomServer::stop_server() {
 
 int main()
 {
+    // 设置配置
+    std::map<std::string, std::string> config;
+    get_config_map("server.config", config);
     init_logger("server_log", "debug.log", "info.log", "warn.log", "error.log", "all.log");
     set_logger_mode(1);
     ChatRoomServer server;
-    server.start_server("127.0.0.1", 8888, 20, 200);
+    server.start_server(config["ip"], std::stoi(config["port"]), 20, 200);
     return 0;
 }

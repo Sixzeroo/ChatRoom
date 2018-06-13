@@ -1,8 +1,8 @@
 CC = g++
 DEBUG = -g -Wall
 STD = c++11
-OBJS = server.o parse.o socket_epoll.o log.o
-OBJC = client.o parse.o log.o
+OBJS = server.o parse.o socket_epoll.o log.o config.o
+OBJC = client.o parse.o log.o config.o
 DEP_INCLUDE_PATH= -I ./
 
 ALL: server client
@@ -28,6 +28,8 @@ parse.o: parse.cpp
 socket_epoll.o: socket_epoll.cpp
 	$(CC) -std=$(STD) $(DEP_INCLUDE_PATH) -c $^ $(DEBUG)
 
+config.o: config.cpp
+	$(CC) -std=$(STD) $(DEP_INCLUDE_PATH) -c $^ $(DEBUG)
 
 .PHONY:
 clean:

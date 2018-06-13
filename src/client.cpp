@@ -13,6 +13,7 @@
 
 #include "client.h"
 #include "log.h"
+#include "config.h"
 
 ChatRoomClient::ChatRoomClient()
 {
@@ -89,6 +90,18 @@ int ChatRoomClient::addfd(int epollfd, int fd, bool enable_et) {
     epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &ev);
     set_noblocking(fd);
     return 0;
+}
+
+std::string ChatRoomClient::get_time_str() {
+    time_t tm;
+    time(&tm);
+    char time_string[128];
+    ctime_r(&tm, time_string);
+    std::string s_time_string = time_string;
+    s_time_string.pop_back();
+    s_time_string = "[" + s_time_string + "]";
+
+    return s_time_string;
 }
 
 int ChatRoomClient::work_loop() {
@@ -176,7 +189,8 @@ int ChatRoomClient::work_loop() {
                         LOG(INFO)<<"Client epoll: close connetct"<<std::endl;
                         isworking = false;
                     }
-                    std::cout<<recv_m.context<<std::endl<<std::flush;
+                    std::string time_str = get_time_str();
+                    std::cout<<time_str<<recv_m.context<<std::endl<<std::flush;
                 }
                 else
                 {
@@ -218,14 +232,10 @@ int ChatRoomClient::work_loop() {
     return 0;
 }
 
-int ChatRoomClient::start_client() {
-    // 设置默认端口
-    if(_server_port == -1)
-        set_server_port(8888);
+int ChatRoomClient::start_client(std::string ip, int port) {
+    set_server_port(port);
 
-    // 设置默认IP地址
-    if(_server_ip.empty())
-        set_server_ip("127.0.0.1");
+    set_server_ip(ip);
 
     if(connect_to_server(_server_ip, _server_port) < 0)
     {
@@ -238,9 +248,11 @@ int ChatRoomClient::start_client() {
 
 int main()
 {
+    std::map<std::string, std::string> config;
+    get_config_map("client.config", config);
     init_logger("client_log", "debug.log", "info.log", "warn.log", "error.log", "all.log");
     set_logger_mode(1);
     ChatRoomClient client;
-    client.start_client();
+    client.start_client(config["ip"], std::stoi(config["port"]));
     return 0;
 }
