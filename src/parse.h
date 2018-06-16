@@ -12,7 +12,8 @@
 
 enum MsgType {
     M_NORMAL = 1,
-    M_EXIT
+    M_EXIT = 2,
+    M_CNAME = 3
 };
 
 // 消息格式

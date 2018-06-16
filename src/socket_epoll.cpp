@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <string>
+#include <utility>
 #include <errno.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -192,8 +193,8 @@ int SocketEpoll::handle_accept_event(const int &epollfd, epoll_event &event, Soc
     }
     set_nonblocking(client_fd);
 
-    // 加入客户端队列中
-    _client_list.push_back(client_fd);
+    // 加入客户端名称集合中
+    _client_list.insert(std::make_pair(client_fd, std::to_string(client_fd)));
     LOG(DEBUG)<<"Handle: add accept client to list successful"<<std::endl;
     return 0;
 }
@@ -221,7 +222,7 @@ int SocketEpoll::handle_readable_event(epoll_event &event, SocketEpollWatcher *s
         }
         // 从列表中删除对应的fd
         for(auto it = _client_list.begin(); it != _client_list.end(); it++)
-            if(*it == fd)
+            if(it->first == fd)
             {
                 _client_list.erase(it);
                 break;

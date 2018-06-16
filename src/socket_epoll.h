@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include <sys/epoll.h>
 
 enum SocketEpollStatus {
@@ -28,7 +29,7 @@ public:
 
     virtual int on_accept(EpollContext &epoll_context) = 0;
 
-    virtual int on_readable(EpollContext &epoll_context,const std::vector<int> client_list) = 0;
+    virtual int on_readable(EpollContext &epoll_context, std::unordered_map<int, std::string> &client_list) = 0;
 };
 
 class SocketEpoll {
@@ -50,7 +51,7 @@ private:
     int _port;
     int _listen_socket;
     int _status;
-    std::vector<int> _client_list;
+    std::unordered_map<int, std::string> _client_list;
     int _clients;
     SocketEpollWatcher *_watcher;
 

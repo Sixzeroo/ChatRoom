@@ -3,6 +3,7 @@
 //
 
 #include <string>
+#include <unordered_map>
 
 #include "server.h"
 #include "parse.h"
@@ -19,16 +20,18 @@ int ServerEpollWatcher::on_accept(EpollContext &epoll_context) {
     int client_fd = epoll_context.fd;
 
     printf("client %s:%d connected to server\n", epoll_context.client_ip.c_str(), epoll_context.client_port);
+    // 返回欢迎信息和nickname信息
     Msg m;
     m.code = M_NORMAL;
     m.context = WELCOM_MES;
+    m.context = m.context + "\nYou nickname is " + std::to_string(client_fd) + " (Enter \"r\" ro replace).";
     int ret = m.send_diy(client_fd);
 
     return ret;
 }
 
 // 处理来信请求, 出错返回-1， 退出连接返回-2
-int ServerEpollWatcher::on_readable(EpollContext &epoll_context, const std::vector<int> client_list) {
+int ServerEpollWatcher::on_readable(EpollContext &epoll_context, std::unordered_map<int, std::string> &client_list) {
     int client_fd = epoll_context.fd;
     Msg recv_m;
     recv_m.recv_diy(client_fd);
@@ -37,23 +40,33 @@ int ServerEpollWatcher::on_readable(EpollContext &epoll_context, const std::vect
     {
         return -2;
     }
+    // 改名请求
+    else if(recv_m.code == M_CNAME)
+    {
+        // 消除最后的换行符
+        recv_m.context.pop_back();
+        client_list[client_fd] = recv_m.context;
+        return 0;
+    }
     // 只有一个客户端，发送警告信息
     if(client_list.size() == 1)
     {
-        Msg m(M_NORMAL, ONLY_ONE_CAUTION);
+        std::string m_str = ONLY_ONE_CAUTION;
+        m_str = " [WARN] " + m_str;
+        Msg m(M_NORMAL, m_str);
         m.send_diy(client_fd);
     }
     else
     {
         // 处理消息格式
         std::string meg_str = recv_m.context;
-        meg_str = std::to_string(client_fd) + ">" + meg_str;
+        meg_str = client_list[client_fd] + ">" + meg_str;
         Msg send_m(M_NORMAL, meg_str);
         // 进行广播
-        for(int it : client_list)
+        for(auto it : client_list)
         {
-            if(it == client_fd) continue;
-            send_m.send_diy(it);
+            if(it.first == client_fd) continue;
+            send_m.send_diy(it.first);
         }
     }
     return 0;

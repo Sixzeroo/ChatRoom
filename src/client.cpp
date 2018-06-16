@@ -171,6 +171,8 @@ int ChatRoomClient::work_loop() {
 
         LOG(DEBUG)<<"Client: parent process close pipefd[1] successful"<<std::endl;
 
+        bool chang_name_flag = false;
+
         while (isworking)
         {
             int epoll_event_count = epoll_wait(_epollfd, events, 2, -1);
@@ -200,6 +202,17 @@ int ChatRoomClient::work_loop() {
                     bzero(message, sizeof(message));
                     ssize_t ret = read(events[i].data.fd, message, BUFF_SIZE);
 
+                    // 改名的第二阶段
+                    if(chang_name_flag)
+                    {
+                        Msg send_m(M_CNAME, message);
+                        send_m.send_diy(_client_fd);
+
+                        LOG(DEBUG)<<"Client epoll: send change name msg to server"<<std::endl;
+                        chang_name_flag = false;
+                        continue;
+                    }
+
                     // 处理客户端退出聊天室的情况
                     if(strncasecmp(message, EXIT_MSG, strlen(EXIT_MSG)) == 0)
                     {
@@ -207,6 +220,12 @@ int ChatRoomClient::work_loop() {
                         Msg send_m(M_EXIT, "exit");
                         send_m.send_diy(_client_fd);
                         LOG(DEBUG)<<"Client epoll: send exit msg to server"<<std::endl;
+                        continue;
+                    }
+                    // 处理改名的情况，设置改名标志
+                    else if(strncasecmp(message, CHANGE_NAME_MSG, strlen(CHANGE_NAME_MSG)) == 0)
+                    {
+                        chang_name_flag = true;
                         continue;
                     }
 

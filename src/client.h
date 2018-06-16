@@ -10,6 +10,7 @@
 #include "parse.h"
 
 #define EXIT_MSG "exit"
+#define CHANGE_NAME_MSG "r"
 
 class ChatRoomClient {
 private:

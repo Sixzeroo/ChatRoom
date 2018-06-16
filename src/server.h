@@ -5,6 +5,8 @@
 #ifndef CHARROOM_SERVER_H
 #define CHARROOM_SERVER_H
 
+#include <unordered_map>
+
 #include "socket_epoll.h"
 
 #define WELCOM_MES "Welcome to ChatRoom!"
@@ -14,7 +16,7 @@ class ServerEpollWatcher : public SocketEpollWatcher {
 public:
     virtual int on_accept(EpollContext &epoll_context);
 
-    virtual int on_readable(EpollContext &epoll_context,const std::vector<int> client_list);
+    virtual int on_readable(EpollContext &epoll_context, std::unordered_map<int, std::string> &client_list);
 };
 
 class ChatRoomServer {
