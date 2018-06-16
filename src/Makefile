@@ -13,23 +13,9 @@ server: $(OBJS)
 client: $(OBJC)
 	$(CC) -std=$(STD) $^ -o $@ $(DEBUG)
 
-server.o: server.cpp
-	$(CC) -std=$(STD) $(DEP_INCLUDE_PATH) -c $^ $(DEBUG)
+%.o: %.cpp
+	$(CC) -std=$(STD) $(DEP_INCLUDE_PATH) -c $< $(DEBUG) -o $@
 
-client.o: client.cpp
-	$(CC) -std=$(STD) $(DEP_INCLUDE_PATH) -c $^ $(DEBUG)
-
-log.o: log.cpp
-	$(CC) -std=$(STD) $(DEP_INCLUDE_PATH) -c $^ $(DEBUG)
-
-parse.o: parse.cpp
-	$(CC) -std=$(STD) $(DEP_INCLUDE_PATH) -c $^ $(DEBUG)
-
-socket_epoll.o: socket_epoll.cpp
-	$(CC) -std=$(STD) $(DEP_INCLUDE_PATH) -c $^ $(DEBUG)
-
-config.o: config.cpp
-	$(CC) -std=$(STD) $(DEP_INCLUDE_PATH) -c $^ $(DEBUG)
 
 .PHONY:
 clean:
